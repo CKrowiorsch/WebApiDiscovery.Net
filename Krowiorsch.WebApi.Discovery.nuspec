@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>WebApi.Discovery</id>
+    <version>0.0.1</version>
+    <authors>Christian Krowiorsch</authors>
+    <description>Clientsystem für eine ServiceDiscovery</description>
+    <language>de-DE</language>
+    <dependencies>
+      <dependency id="Newtonsoft.Json" version="[5.0.8,)" />
+      <dependency id="NLog" version="[2.1.0,)" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="WebApiDiscovery.Net\WebApiDiscovery.Net.dll" target="lib" />
+    <file src="WebApiDiscovery.Net\WebApiDiscovery.Net.xml" target="xml" />
+  </files>
+</package>
