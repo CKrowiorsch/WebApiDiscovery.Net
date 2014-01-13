@@ -17,7 +17,7 @@ namespace Krowiorsch
     {
         static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        static readonly ConcurrentDictionary<string, WebApiServiceState[]> _services 
+        static readonly ConcurrentDictionary<string, WebApiServiceState[]> _services
             = new ConcurrentDictionary<string, WebApiServiceState[]>();
 
         Task _discoveryTask;
@@ -30,7 +30,7 @@ namespace Krowiorsch
         public DiscoveryClient()
             : this(ServiceSelectors.RoundRobin)
         {
-            
+
         }
 
         public DiscoveryClient(ICanSelectServices selector)
@@ -75,21 +75,38 @@ namespace Krowiorsch
             });
         }
 
-        public Uri Discover(string serviceName)
+
+        public Uri Discover(Uri discoveryIdentifier)
+        {
+            if (discoveryIdentifier.Scheme.Equals("discover"))
+                return DiscoverByServiceIdentifier(discoveryIdentifier.PathAndQuery);
+
+            return discoveryIdentifier;
+        }
+
+        public Uri[] DiscoverAll(Uri discoveryIdentifier)
+        {
+            if (discoveryIdentifier.Scheme.Equals("discover"))
+                return DiscoverAllByServiceIdentifier(discoveryIdentifier.PathAndQuery);
+
+            return new[] { discoveryIdentifier };
+        }
+
+        public Uri DiscoverByServiceIdentifier(string serviceName)
         {
             if (!_services.ContainsKey(serviceName))
                 return null;
 
             var availableServices = _services[serviceName].ToArray();
 
-            if(!availableServices.Any())
+            if (!availableServices.Any())
                 return null;
 
             var selectedService = _serviceSelector.Select(availableServices);
             return selectedService == null ? null : selectedService.ServiceUri;
         }
 
-        public Uri[] DiscoverAll(string serviceName)
+        public Uri[] DiscoverAllByServiceIdentifier(string serviceName)
         {
             if (!_services.ContainsKey(serviceName))
                 return null;

@@ -48,14 +48,14 @@ namespace Krowiorsch
 
         static void Discover(string name, DiscoveryClient client)
         {
-            var service = client.Discover(name);
+            var service = client.DiscoverByServiceIdentifier(name);
 
             Logger.Info("Found Service on {0} for {1}", service, name);
         }
 
         static void DiscoverAll(string name, DiscoveryClient client)
         {
-            var services = client.DiscoverAll(name);
+            var services = client.DiscoverAllByServiceIdentifier(name);
 
             foreach(var service in services)
             {
