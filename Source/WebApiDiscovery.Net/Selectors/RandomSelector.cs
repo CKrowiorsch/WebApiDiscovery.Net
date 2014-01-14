@@ -9,14 +9,14 @@ namespace Krowiorsch.Selectors
     {
         static readonly Random Rnd = new Random(Environment.TickCount);
 
-        public WebApiServiceState Select(WebApiServiceState[] availableServices)
+        public ServiceEndpointWithState Select(ServiceEndpointWithState[] availableServicesEndpointWith)
         {
-            if (!availableServices.Any())
+            if (!availableServicesEndpointWith.Any())
                 return null;
 
-            var count = availableServices.Count();
+            var count = availableServicesEndpointWith.Count();
 
-            return availableServices[Rnd.Next(0, count)];
+            return availableServicesEndpointWith[Rnd.Next(0, count)];
         }
     }
 }

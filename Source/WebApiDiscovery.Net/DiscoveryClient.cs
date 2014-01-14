@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,19 +12,27 @@ using NLog;
 
 namespace Krowiorsch
 {
-    public class DiscoveryClient : IDisposable
+    public class DiscoveryClient : IDisposable, IDiscoveryClient
     {
         static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        static readonly ConcurrentDictionary<string, WebApiServiceState[]> _services
-            = new ConcurrentDictionary<string, WebApiServiceState[]>();
+        static readonly ServiceCatalog Catalog = new ServiceCatalog();
 
-        Task _discoveryTask;
-        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        static Task _discoveryTask;
+        static readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         readonly ICanSelectServices _serviceSelector;
 
-        readonly MulticastClient _multicastClient = MulticastClientFactory.CreateForServiceDiscovery();
+        static readonly MulticastClient _multicastClient = MulticastClientFactory.CreateForServiceDiscovery();
+
+        static DiscoveryClient()
+        {
+        }
+
+        public static void Initialize()
+        {
+            _discoveryTask = WatchAsync().ContinueWith(t => Logger.Warn("Discovery Task wurde beendet"));
+        }
 
         public DiscoveryClient()
             : this(ServiceSelectors.RoundRobin)
@@ -36,42 +43,29 @@ namespace Krowiorsch
         public DiscoveryClient(ICanSelectServices selector)
         {
             _serviceSelector = selector;
-            _discoveryTask = WatchAsync().ContinueWith(t => Logger.Warn("Discovery Task wurde beendet"));
         }
 
-        Task WatchAsync()
+        static Task WatchAsync()
         {
+            Task.Factory.StartNew(() =>
+            {
+                while(!_cancellationTokenSource.IsCancellationRequested)
+                {
+                    Catalog.CheckHeartbeat();
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                }
+            }, _cancellationTokenSource.Token);
+            
             return _multicastClient.ReceiveAsync(s =>
             {
                 var message = Message.FromJson(s);
-
                 var content = message.GetBodyMessage();
 
                 if (content is RegisterEndpointMessage)
-                {
-                    var registerMessage = (content as RegisterEndpointMessage);
-
-                    var state = new WebApiServiceState(registerMessage.Endpoint.ServiceName, registerMessage.Endpoint.Endpoint);
-
-                    _services.AddOrUpdate(registerMessage.Endpoint.ServiceName,
-                        new[] { state },
-                        (key, existingValue) =>
-                        {
-                            if (existingValue.Any(t => t.ServiceUri.Equals(state.ServiceUri)))
-                                return existingValue;
-
-                            Logger.Info("Register new service ... name:{0} uri:{1}", state.ServiceIdentifier, state.ServiceUri);
-
-                            return existingValue.Union(new[] { state }).ToArray();
-                        });
-                }
+                    Catalog.Handle((RegisterEndpointMessage)content);
 
                 if (content is UnregisterEndpointMessage)
-                {
-                    var unRegisterMessage = (content as UnregisterEndpointMessage);
-                    _services[unRegisterMessage.Endpoint.ServiceName] = _services[unRegisterMessage.Endpoint.ServiceName].Where(t => !t.ServiceUri.Equals(unRegisterMessage.Endpoint.Endpoint)).ToArray();
-                }
-
+                    Catalog.Handle((UnregisterEndpointMessage)content);
             });
         }
 
@@ -94,24 +88,23 @@ namespace Krowiorsch
 
         public Uri DiscoverByServiceIdentifier(string serviceName)
         {
-            if (!_services.ContainsKey(serviceName))
+            var serviceEndpoints = Catalog.GetByName(serviceName);
+
+            if (!serviceEndpoints.Any())
                 return null;
 
-            var availableServices = _services[serviceName].ToArray();
-
-            if (!availableServices.Any())
-                return null;
-
-            var selectedService = _serviceSelector.Select(availableServices);
-            return selectedService == null ? null : selectedService.ServiceUri;
+            var selectedService = _serviceSelector.Select(serviceEndpoints.Cast<ServiceEndpointWithState>().ToArray());
+            return selectedService == null ? null : selectedService.Endpoint;
         }
 
         public Uri[] DiscoverAllByServiceIdentifier(string serviceName)
         {
-            if (!_services.ContainsKey(serviceName))
-                return null;
+            var serviceEndpoints = Catalog.GetByName(serviceName);
 
-            return _services[serviceName].Select(t => t.ServiceUri).ToArray();
+            if (!serviceEndpoints.Any())
+                return new Uri[0];
+
+            return serviceEndpoints.Select(t => t.Endpoint).ToArray();
         }
 
         public void Dispose()

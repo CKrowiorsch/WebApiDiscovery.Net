@@ -9,21 +9,21 @@ namespace Krowiorsch.Selectors
     {
         readonly IDictionary<string, int> _lastPositions = new Dictionary<string, int>();
 
-        public WebApiServiceState Select(WebApiServiceState[] availableServices)
+        public ServiceEndpointWithState Select(ServiceEndpointWithState[] availableServicesEndpointWith)
         {
-            var serviceIdentifier = availableServices.First().ServiceIdentifier;
+            var serviceIdentifier = availableServicesEndpointWith.First().ServiceIdentifier;
 
             var lastPosition = _lastPositions.ContainsKey(serviceIdentifier) ? _lastPositions[serviceIdentifier] : 0;
 
 
-            var newPosition = (lastPosition + 1) % (availableServices.Count());
+            var newPosition = (lastPosition + 1) % (availableServicesEndpointWith.Count());
 
             if(_lastPositions.ContainsKey(serviceIdentifier))
                 _lastPositions[serviceIdentifier] = newPosition;
             else
                 _lastPositions.Add(serviceIdentifier, newPosition);
 
-            return availableServices[newPosition];
+            return availableServicesEndpointWith[newPosition];
         }
     }
 }

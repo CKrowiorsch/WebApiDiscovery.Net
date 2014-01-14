@@ -24,7 +24,17 @@ namespace Krowiorsch.Scenarios
             config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
 
             _server = new HttpSelfHostServer(config);
-            _server.OpenAsync().ContinueWith(t => Logger.Debug(string.Format("Start Server on {0}", port))).Wait();
+            _server.OpenAsync().ContinueWith(t =>
+            {
+                if(t.IsFaulted)
+                {
+                    Logger.Warn("Fehler beim hochfahren");
+                    return;
+                }
+
+                Logger.Debug(string.Format("Start Server on {0}", port));
+                
+            }).Wait();
         }
 
         public void StopServer()

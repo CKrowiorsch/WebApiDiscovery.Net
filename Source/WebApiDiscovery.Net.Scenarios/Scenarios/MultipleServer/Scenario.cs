@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 using NLog;
@@ -18,6 +19,7 @@ namespace Krowiorsch.Scenarios.MultipleServer
             {
                 StartAndRegisterServer(IpPort.GetNextPortAvailable(10000));
                 StartAndRegisterServer(IpPort.GetNextPortAvailable(10000));
+                StartAndRegisterServer(IpPort.GetNextPortAvailable(10000));
             });
         }
 
@@ -25,7 +27,7 @@ namespace Krowiorsch.Scenarios.MultipleServer
         {
             var server = new WebApiServer();
             server.StartServer(port, () => Logger.Debug("Aufruf"));
-            DiscoverableServer.Register("test", new Uri(string.Format("http://{1}:{0}", port, Environment.MachineName)));
+            DiscoverableServer.Register("test", new Uri(string.Format("http://{1}:{0}", port, "localhost")));
 
             _servers.Add(server);
         }
