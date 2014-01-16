@@ -20,7 +20,7 @@ namespace Krowiorsch
 
             var discoveryClient = new DiscoveryClient();
 
-            using(var scenrio = new Scenarios.MultipleServer.Scenario())
+            using(var scenrio = new Scenarios.SingleServer.Scenario())
             {
                 var task = scenrio.StartScenrio();
                 task.Wait();
@@ -51,12 +51,25 @@ namespace Krowiorsch
                         RequestOn(line.Split(' ').Skip(1).First(), discoveryClient);
                         continue;
                     }
+                    if (line.StartsWith("services"))
+                    {
+                        ServicesList(discoveryClient);
+                        continue;
+                    }
 
                     Logger.Info("unknown command");
                 }
             }
 
             
+        }
+
+        static void ServicesList(IDiscoveryClient discoveryClient)
+        {
+            foreach(var service in discoveryClient.KnownServices())
+            {
+                Logger.Info(string.Format("Service:{0}", service));
+            }
         }
 
         static void RequestOn(string serviceUri, IDiscoveryClient discoveryClient, int requestCount = 10)

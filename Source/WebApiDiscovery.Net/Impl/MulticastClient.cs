@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -28,12 +29,17 @@ namespace Krowiorsch.Impl
         {
             return Task.Factory.StartNew(() =>
             {
-                var mcastSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                mcastSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
-                var mcastOption = new MulticastOption(MulticastAdress);
-                mcastSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
-                var endPoint = new IPEndPoint(MulticastAdress, Port);
-                mcastSocket.SendTo(Encoding.ASCII.GetBytes(data), endPoint);
+                IPAddress[] localIPs = Dns.GetHostAddresses(Dns.GetHostName());
+
+                foreach(var ipAddress in localIPs.Where(a => a.AddressFamily == AddressFamily.InterNetwork))
+                {
+                    var mcastSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    mcastSocket.Bind(new IPEndPoint(ipAddress, 0));
+                    var mcastOption = new MulticastOption(MulticastAdress);
+                    mcastSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, mcastOption);
+                    var endPoint = new IPEndPoint(MulticastAdress, Port);
+                    mcastSocket.SendTo(Encoding.ASCII.GetBytes(data), endPoint);
+                }
             });
         }
 

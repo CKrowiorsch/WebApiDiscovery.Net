@@ -7,5 +7,7 @@ namespace Krowiorsch
         Uri Discover(Uri discoveryIdentifier);
 
         Uri[] DiscoverAll(Uri discoveryIdentifier);
+
+        string[] KnownServices();
     }
 }

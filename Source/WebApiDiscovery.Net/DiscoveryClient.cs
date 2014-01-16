@@ -86,6 +86,11 @@ namespace Krowiorsch
             return new[] { discoveryIdentifier };
         }
 
+        public string[] KnownServices()
+        {
+            return Catalog.GetKnownServices();
+        }
+
         public Uri DiscoverByServiceIdentifier(string serviceName)
         {
             var serviceEndpoints = Catalog.GetByName(serviceName);
