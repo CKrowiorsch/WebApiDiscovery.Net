@@ -13,26 +13,15 @@ task Help {
     write-host "To Create Nuget-Packages Locally: psake.cmd 'Create:Nuget'" -ForegroundColor Magenta
 }
 
-task Check {
-	# nothing
-}
 
 task Clean {
 	rmdir -force -recurse $outdir -ea SilentlyContinue
 }
 
 task Rebuild -depends Clean {
-    $solution = get-location;
-	exec { msbuild /nologo /v:minimal /t:rebuild /p:"Configuration=Release;OutDir=$bindir/WebApiDiscovery.Net/;SolutionDir=$solution/" "Source/WebApiDiscovery.Net/WebApiDiscovery.Net.csproj" }
+    dotnet build -c Release -r win-x86 -clp:nosummary -v:m -o "$bindir\WebApiDiscovery.Net\" "Source/WebApiDiscovery.Net/WebApiDiscovery.Net.csproj" -nologo
 }
-task Create:Nuget -depends Rebuild,Check {
-    push-location "$bindir/"
-       
-    copy "$location/Krowiorsch.WebApi.Discovery.nuspec" $bindir
-    
-    $version = ([System.Diagnostics.FileVersionInfo]::GetVersionInfo("$bindir\WebApiDiscovery.Net\WebApiDiscovery.Net.dll").productVersion);
-    ..\..\.NuGet\NuGet.exe pack "Krowiorsch.WebApi.Discovery.nuspec" /version "$version"
-    
-    pop-location
+task Create:Nuget -depends Clean {
+    dotnet build -c Release -r win-x86 -clp:nosummary -v:m -o "$bindir\WebApiDiscovery.Net\" "Source/WebApiDiscovery.Net/WebApiDiscovery.Net.csproj" -nologo
 }
 
